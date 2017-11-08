@@ -5,6 +5,53 @@ import click
 ctx = SimpleNamespace(tokens=[], indent=0)
 ctx.indent += 1
 
+def pre_process():
+    counter = 0
+    previous_operation = ""
+    pre_processed_operations = ""
+
+    for operation in source:
+        if(operation == "+"):
+            if(previous_operation == "+"):
+                counter += 1
+            elif(previous_operation == "-"):
+                pre_processed_operations += str(counter) + "-"
+                counter = 1
+            else:
+                pre_processed_operations += previous_operation
+                counter = 1
+                        
+            previous_operation = "+"
+        
+        elif(operation == "-"):
+            if(previous_operation == "-"):
+                counter += 1
+            elif(previous_operation == "+"):
+                pre_processed_operations += str(counter) + "+"
+                counter = 1
+            else:
+                pre_processed_operations += previous_operation
+                counter = 1
+                        
+            previous_operation = "-"
+
+        else:
+            if(previous_operation == "+"):
+                pre_processed_operations += str(counter) + "+"
+                counter = 1
+            elif(previous_operation == "-"):
+                pre_processed_operations += str(counter) + "-"
+                counter = 1
+            else:
+                pre_processed_operations += previous_operation
+
+            previous_operation = operation
+
+    
+    pre_processed_operations += str(counter) + previous_operation
+    
+    print(pre_processed_operations)
+           
 def bf(ctx, source):
     data = [0]
     ptr = 0
