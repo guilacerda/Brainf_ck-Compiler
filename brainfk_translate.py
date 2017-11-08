@@ -2,6 +2,11 @@ from getch import getche
 from types import SimpleNamespace
 import click
 
+source =  '''
+HELLO BRAINFUCK!
+++++++[--+]
+'''
+
 ctx = SimpleNamespace(tokens=[], indent=0)
 ctx.indent += 1
 
@@ -14,44 +19,68 @@ def pre_process():
         if(operation == "+"):
             if(previous_operation == "+"):
                 counter += 1
-            elif(previous_operation == "-"):
-                pre_processed_operations += str(counter) + "-"
-                counter = 1
             else:
-                pre_processed_operations += previous_operation
+                pre_processed_operations += str(counter) + previous_operation
                 counter = 1
-                        
+
             previous_operation = "+"
         
         elif(operation == "-"):
             if(previous_operation == "-"):
                 counter += 1
-            elif(previous_operation == "+"):
-                pre_processed_operations += str(counter) + "+"
-                counter = 1
             else:
-                pre_processed_operations += previous_operation
+                pre_processed_operations += str(counter) + previous_operation
                 counter = 1
-                        
+
             previous_operation = "-"
 
-        else:
-            if(previous_operation == "+"):
-                pre_processed_operations += str(counter) + "+"
-                counter = 1
-            elif(previous_operation == "-"):
-                pre_processed_operations += str(counter) + "-"
-                counter = 1
+        elif(operation == ">"):
+            if(previous_operation == ">"):
+                counter += 1
             else:
-                pre_processed_operations += previous_operation
+                pre_processed_operations += str(counter) + previous_operation
+                counter = 1
+
+            previous_operation = ">"
+
+        elif(operation == "<"):
+            if(previous_operation == "<"):
+                counter += 1
+            else:
+                pre_processed_operations += str(counter) + previous_operation
+                counter = 1
+
+            previous_operation = "<"
+
+        elif(operation == "."):
+            if(previous_operation == "."):
+                counter += 1
+            else:
+                pre_processed_operations += str(counter) + previous_operation
+                counter = 1
+
+            previous_operation = "."
+
+        elif(operation == ","):
+            if(previous_operation == ","):
+                counter += 1
+            else:
+                pre_processed_operations += str(counter) + previous_operation
+                counter = 1
+
+            previous_operation = ","
+
+        else:
+            pre_processed_operations += str(counter) + previous_operation
+            counter = 1
 
             previous_operation = operation
 
     
     pre_processed_operations += str(counter) + previous_operation
     
-    print(pre_processed_operations)
-           
+    print(pre_processed_operations[1:])
+
 def bf(ctx, source):
     data = [0]
     ptr = 0
