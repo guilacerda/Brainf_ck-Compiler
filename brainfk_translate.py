@@ -85,9 +85,10 @@ def bf(ctx, source):
     data = [0]
     ptr = 0
     code_ptr = 0
+    depth = 0
     breakpoints = []
 
-    ctx.tokens.append('\tunsigned char caracter[42042];\n')
+    ctx.tokens.append('\tunsigned char character[42042];\n')
     ctx.tokens.append('\tunsigned int ptr;\n\n')
 
     while code_ptr < len(source):
@@ -95,37 +96,28 @@ def bf(ctx, source):
 
         if cmd == '+':
             data[ptr] = (data[ptr] + 1) % 256
-            ctx.tokens.append(('\t' * ctx.indent) + 'caracter[ptr]++;\n')
+            ctx.tokens.append(('\t' * (ctx.indent + depth)) + 'character[ptr]++;\n')
         elif cmd == '-':
             data[ptr] = (data[ptr] - 1) % 256
-            ctx.tokens.append(('\t' * ctx.indent) + 'caracter[ptr]--;\n')
+            ctx.tokens.append(('\t' * (ctx.indent + depth)) + 'character[ptr]--;\n')
         elif cmd == '>':
             ptr += 1
-            ctx.tokens.append(('\t' * ctx.indent) + 'ptr++;\n')
+            ctx.tokens.append(('\t' * (ctx.indent + depth)) + 'ptr++;\n')
             if ptr == len(data):
                 data.append(0)
         elif cmd == '<':
             ptr -= 1
-            ctx.tokens.append(('\t' * ctx.indent) + 'ptr--;\n')
+            ctx.tokens.append(('\t' * (ctx.indent + depth)) + 'ptr--;\n')
         elif cmd == '.':
-            ctx.tokens.append(('\t' * ctx.indent) + 'putchar(caracter[ptr]);\n')
+            ctx.tokens.append(('\t' * (ctx.indent + depth)) + 'putchar(character[ptr]);\n')
         elif cmd == ',':
-            ctx.tokens.append(('\t' * ctx.indent) + 'caracter[ptr] = getchar();\n')
+            ctx.tokens.append(('\t' * (ctx.indent + depth)) + 'character[ptr] = getchar();\n')
         elif cmd == '[':
-            if data[ptr] == 0:
-                open_brackets = 1
-                while open_brackets != 0:
-                    code_ptr += 1
-                    if source[code_ptr] == '[':
-                        open_brackets += 1
-                    elif source[code_ptr] == ']':
-                        open_brackets -= 1
-            else:
-                breakpoints.append(code_ptr)
+            ctx.tokens.append(('\t' * (ctx.indent + depth)) + 'while(character[ptr] != 0){\n')
+            depth += 1 
         elif cmd == ']':
-            # voltar para o colchete correspondente
-            code_ptr = breakpoints.pop() - 1
-
+            depth -= 1
+            ctx.tokens.append(('\t' * (ctx.indent + depth)) + '}\n')
         code_ptr += 1
 
     ctx.tokens.append('\n\treturn 0;\n')
