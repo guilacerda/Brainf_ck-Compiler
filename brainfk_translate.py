@@ -1,57 +1,40 @@
 from getch import getche
 from types import SimpleNamespace
-
-source =  '''
-HELLO BRAINFUCK!
-+
--
--
-+
-+++++++,
-.
-'''
+import click
 
 ctx = SimpleNamespace(tokens=[], indent=0)
-
-ctx.tokens.append('#include "stdio.h"\n')
-ctx.tokens.append('#include "stdlib.h"\n')
-ctx.tokens.append('\nint main() {\n')
-
 ctx.indent += 1
 
-def bf(source):
-    """
-    Executa uma string de código brainf*ck e retorna
-    o estado final da fita de memória.
-    """
-
+def bf(ctx, source):
     data = [0]
     ptr = 0
     code_ptr = 0
     breakpoints = []
+
+    ctx.tokens.append('\tunsigned char caracter[42042];\n')
+    ctx.tokens.append('\tunsigned int ptr;\n\n')
 
     while code_ptr < len(source):
         cmd = source[code_ptr]
 
         if cmd == '+':
             data[ptr] = (data[ptr] + 1) % 256
-            ctx.tokens.append(('    ' * ctx.indent) + 'caracter[ptr]++;\n')
+            ctx.tokens.append(('\t' * ctx.indent) + 'caracter[ptr]++;\n')
         elif cmd == '-':
             data[ptr] = (data[ptr] - 1) % 256
-            ctx.tokens.append(('    ' * ctx.indent) + 'caracter[ptr]--;\n')
+            ctx.tokens.append(('\t' * ctx.indent) + 'caracter[ptr]--;\n')
         elif cmd == '>':
             ptr += 1
-            ctx.tokens.append(('    ' * ctx.indent) + 'ptr++;\n')
+            ctx.tokens.append(('\t' * ctx.indent) + 'ptr++;\n')
             if ptr == len(data):
                 data.append(0)
         elif cmd == '<':
             ptr -= 1
-            ctx.tokens.append(('    ' * ctx.indent) + 'ptr--;\n')
+            ctx.tokens.append(('\t' * ctx.indent) + 'ptr--;\n')
         elif cmd == '.':
-            ctx.tokens.append(('    ' * ctx.indent) + 'putchar(data[ptr]);\n')
+            ctx.tokens.append(('\t' * ctx.indent) + 'putchar(caracter[ptr]);\n')
         elif cmd == ',':
-            data[ptr] = ord(getche())
-            ctx.tokens.append(('    ' * ctx.indent) + 'data[ptr] = getchar(data[ptr]);\n')
+            ctx.tokens.append(('\t' * ctx.indent) + 'caracter[ptr] = getchar();\n')
         elif cmd == '[':
             if data[ptr] == 0:
                 open_brackets = 1
@@ -69,12 +52,37 @@ def bf(source):
 
         code_ptr += 1
 
-
-    ctx.tokens.append('\n' + '    ' + 'return 0;\n')
+    ctx.tokens.append('\n\treturn 0;\n')
     ctx.tokens.append('}\n')
 
-    print(''.join(ctx.tokens))
+    return ''.join(ctx.tokens)
 
-    return data
+@click.command()
+@click.argument('entry_file_name')
+@click.option('-o', nargs=1)
 
-bf(source)
+def compiled_c(o, entry_file_name):
+    input_file = open(entry_file_name, 'r')
+
+    entry_arg = '%s' % o
+
+    args = SimpleNamespace(tokens=[])
+
+    for line in input_file:
+        args.tokens.append(line)
+
+    input_file.close()
+
+    source = bf(ctx, ''.join(args.tokens))
+
+    output_file = open(entry_arg, 'w')
+
+    output_file.write('#include <stdio.h>\n')
+    output_file.write('#include <stdlib.h>\n')
+    output_file.write('\nint main() {\n')
+    output_file.write(source)
+
+    output_file.close()
+    input_file.close()
+
+compiled_c()
