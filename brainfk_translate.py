@@ -2,84 +2,36 @@ from getch import getche
 from types import SimpleNamespace
 import click
 
-source =  '''
-HELLO BRAINFUCK!
-++++++[--+]
-'''
-
 ctx = SimpleNamespace(tokens=[], indent=0)
 ctx.indent += 1
 
-def pre_process():
+def pre_process_source(source):
     counter = 0
     previous_operation = ""
     pre_processed_operations = ""
+    valid_operations = "+-<>.,[]"
 
     for operation in source:
-        if(operation == "+"):
-            if(previous_operation == "+"):
-                counter += 1
-            else:
+        if(valid_operations.find(operation) != -1):
+
+            if(operation == "[" or operation == "]"):
                 pre_processed_operations += str(counter) + previous_operation
                 counter = 1
 
-            previous_operation = "+"
-        
-        elif(operation == "-"):
-            if(previous_operation == "-"):
-                counter += 1
+                previous_operation = operation
             else:
-                pre_processed_operations += str(counter) + previous_operation
-                counter = 1
+                if(operation == previous_operation):
+                    counter += 1
+                else:
+                    pre_processed_operations += str(counter) + previous_operation
+                    counter = 1
 
-            previous_operation = "-"
-
-        elif(operation == ">"):
-            if(previous_operation == ">"):
-                counter += 1
-            else:
-                pre_processed_operations += str(counter) + previous_operation
-                counter = 1
-
-            previous_operation = ">"
-
-        elif(operation == "<"):
-            if(previous_operation == "<"):
-                counter += 1
-            else:
-                pre_processed_operations += str(counter) + previous_operation
-                counter = 1
-
-            previous_operation = "<"
-
-        elif(operation == "."):
-            if(previous_operation == "."):
-                counter += 1
-            else:
-                pre_processed_operations += str(counter) + previous_operation
-                counter = 1
-
-            previous_operation = "."
-
-        elif(operation == ","):
-            if(previous_operation == ","):
-                counter += 1
-            else:
-                pre_processed_operations += str(counter) + previous_operation
-                counter = 1
-
-            previous_operation = ","
-
-        else:
-            pre_processed_operations += str(counter) + previous_operation
-            counter = 1
-
-            previous_operation = operation
-
+                previous_operation = operation
     
     pre_processed_operations += str(counter) + previous_operation
-    
-    print(pre_processed_operations[1:])
+
+    pre_processed_operations = pre_processed_operations[1:]
+    return pre_processed_operations
 
 def bf(ctx, source):
     data = [0]
@@ -91,27 +43,47 @@ def bf(ctx, source):
     ctx.tokens.append('\tunsigned char character[42042];\n')
     ctx.tokens.append('\tunsigned int ptr;\n\n')
 
-    while code_ptr < len(source):
-        cmd = source[code_ptr]
+    pre_processed_operations = pre_process_source(source)
+
+    while code_ptr < len(pre_processed_operations):
+        number_of_ocurrences = ""
+        while(pre_processed_operations[code_ptr].isdigit()):
+            number_of_ocurrences += pre_processed_operations[code_ptr]
+            code_ptr+=1
+
+        cmd = pre_processed_operations[code_ptr]
 
         if cmd == '+':
             data[ptr] = (data[ptr] + 1) % 256
-            ctx.tokens.append(('\t' * (ctx.indent + depth)) + 'character[ptr]++;\n')
+            ctx.tokens.append(('\t' * (ctx.indent + depth)) + 'character[ptr]+={};\n'.format(number_of_ocurrences))
         elif cmd == '-':
             data[ptr] = (data[ptr] - 1) % 256
-            ctx.tokens.append(('\t' * (ctx.indent + depth)) + 'character[ptr]--;\n')
+            ctx.tokens.append(('\t' * (ctx.indent + depth)) + 'character[ptr]-={};\n'.format(number_of_ocurrences))
         elif cmd == '>':
             ptr += 1
-            ctx.tokens.append(('\t' * (ctx.indent + depth)) + 'ptr++;\n')
+            ctx.tokens.append(('\t' * (ctx.indent + depth)) + 'ptr+={};\n'.format(number_of_ocurrences))
             if ptr == len(data):
                 data.append(0)
         elif cmd == '<':
             ptr -= 1
-            ctx.tokens.append(('\t' * (ctx.indent + depth)) + 'ptr--;\n')
+            ctx.tokens.append(('\t' * (ctx.indent + depth)) + 'ptr-={};\n'.format(number_of_ocurrences))
         elif cmd == '.':
-            ctx.tokens.append(('\t' * (ctx.indent + depth)) + 'putchar(character[ptr]);\n')
+            if(number_of_ocurrences == "1"):
+                ctx.tokens.append(('\t' * (ctx.indent + depth)) + 'putchar(character[ptr]);\n')
+            else:
+                ctx.tokens.append(('\t' * (ctx.indent + depth)) + 
+                'for(int i = 0;i < {};++i)'.format(number_of_ocurrences) + '{' + '\n')
+                ctx.tokens.append(('\t' * (ctx.indent + (depth + 1))) + 'putchar(character[ptr]);\n')
+                ctx.tokens.append(('\t' * (ctx.indent + depth)) + '}\n')
         elif cmd == ',':
-            ctx.tokens.append(('\t' * (ctx.indent + depth)) + 'character[ptr] = getchar();\n')
+            if(number_of_ocurrences == "1"):
+                ctx.tokens.append(('\t' * (ctx.indent + depth)) + 'character[ptr] = getchar();\n')
+            else:
+                ctx.tokens.append(('\t' * (ctx.indent + depth)) + 
+                'for(int i = 0;i < {};++i)'.format(number_of_ocurrences) + '{' + '\n')
+                ctx.tokens.append(('\t' * (ctx.indent + (depth + 1))) + 'character[ptr] = getchar();\n')
+                ctx.tokens.append(('\t' * (ctx.indent + depth)) + '}\n')
+                
         elif cmd == '[':
             ctx.tokens.append(('\t' * (ctx.indent + depth)) + 'while(character[ptr] != 0){\n')
             depth += 1 
